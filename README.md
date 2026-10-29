@@ -46,3 +46,4 @@ Projet réalisé dans le cadre du **Module RAG — Université Mundiapolis (3ACI
 ### Notebook principal
 Ouvrir `notebooks/rag_eih.ipynb` dans VS Code, sélectionner le kernel **Python (assistant-scolarite)** et exécuter les cellules.
 Le notebook est découpé en 5 séances (S1 à S5) auto-portées.
+
