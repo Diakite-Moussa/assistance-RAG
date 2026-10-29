@@ -1,0 +1,41 @@
+# Environments
+.env
+.env.local
+.venv/
+venv/
+ENV/
+
+# Python / Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Database / Vector Store
+chroma_db/
+*.sqlite3
+
+# macOS / Windows artefacts
+.DS_Store
+Thumbs.db
+__MACOSX/
+._*
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
