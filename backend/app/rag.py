@@ -18,6 +18,12 @@ def extract_citations(answer: str) -> list[int]:
     return seen
 
 
+def normalize_citations(answer: str) -> str:
+    """Certains modèles écrivent « 【2】 » (crochets pleine chasse) au lieu de « [2] » : on les ramène
+    au format attendu, sinon une bonne réponse est prise pour une réponse sans citation."""
+    return re.sub(r"【\s*(\d+(?:\s*[,;]\s*\d+)*)\s*】", r"[\1]", answer)
+
+
 def is_refusal(answer: str) -> bool:
     norm = lambda s: s.replace("’", "'").lower()
     return norm(REFUSAL) in norm(answer)
@@ -39,9 +45,12 @@ def add_amending_fragments(client, embedder, question, hits, strategy, threshold
     return sorted(hits + extra, key=lambda h: h["score"], reverse=True)
 
 
-def _refusal(started: float) -> dict:
+def _refusal(started: float, reason: str = "", raw: str = "") -> dict:
+    # `refusal_reason` et `raw_answer` servent au diagnostic (eval/run_eval.py) ; le contrat de
+    # l'API (AskResponse) ne les expose pas.
     return {"answer": REFUSAL, "found": False, "sources": [],
-            "invalid_citations": [], "latency_ms": int((time.perf_counter() - started) * 1000)}
+            "invalid_citations": [], "latency_ms": int((time.perf_counter() - started) * 1000),
+            "refusal_reason": reason, "raw_answer": raw}
 
 
 def ask(client, embedder, llm, question: str, top_k: int, strategy: str, doc_type: str | None,
@@ -51,14 +60,14 @@ def ask(client, embedder, llm, question: str, top_k: int, strategy: str, doc_typ
 
     # Contrôle n°1 (côté code) : meilleur score trop bas -> refus SANS appeler le LLM.
     if not hits or hits[0]["score"] < score_threshold:
-        return _refusal(started)
+        return _refusal(started, "below_threshold")
 
     hits = add_amending_fragments(client, embedder, question, hits, strategy, score_threshold)
-    answer = llm.chat(SYSTEM_PROMPT, build_user_message(question, hits))
+    answer = normalize_citations(llm.chat(SYSTEM_PROMPT, build_user_message(question, hits)))
 
     # Refus décidé par le LLM : on normalise la phrase pour qu'elle soit exacte.
     if is_refusal(answer):
-        return _refusal(started)
+        return _refusal(started, "llm_refusal", answer)
 
     # Contrôle n°2 (côté code) : chaque numéro cité doit correspondre à un fragment fourni.
     cited = extract_citations(answer)
@@ -67,7 +76,7 @@ def ask(client, embedder, llm, question: str, top_k: int, strategy: str, doc_typ
     # Contrôle n°3 : une réponse fondée cite au moins un fragment valide. Sans citation valide,
     # le modèle a répondu « de mémoire » ou a reformulé son refus : on traite cela comme un refus.
     if len(cited) == len(invalid):
-        return _refusal(started)
+        return _refusal(started, "no_valid_citation", answer)
 
     sources = [{
         "id": i, "chunk_id": h["chunk_id"], "file": h["file"], "reference": h["reference"],

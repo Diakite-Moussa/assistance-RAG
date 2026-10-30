@@ -62,6 +62,13 @@ def test_answer_without_valid_citation_is_treated_as_refusal(indexed, embedder):
     assert res["found"] is False
 
 
+def test_fullwidth_citation_brackets_are_normalized(indexed, embedder):
+    # cas réel observé avec gpt-oss : « 【1】 » au lieu de « [1] » ; la réponse était bonne mais refusée
+    res = _ask(indexed, embedder, FakeLLM("La durée est de 18 semaines【1, 2】."))
+    assert res["found"] is True
+    assert "[1, 2]" in res["answer"] and "【" not in res["answer"]
+
+
 def test_extract_citations():
     assert rag.extract_citations("a [1] b [2, 3] c [1] d [x]") == [1, 2, 3]
     assert rag.extract_citations("aucune citation") == []
