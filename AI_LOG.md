@@ -51,3 +51,13 @@ Date de début : 29 octobre 2026
 - **Vérifications effectuées** :
   - Exécution réussie de la cellule S2 dans le notebook (`rag_eih.ipynb`).
   - Vérification de la persistance des fichiers dans `chroma_db/`.
+
+## Séance 3 : Ajustement des contrôles de citations et renforcement du refus
+- **Date** : 30/10/2026
+- **Outil d'IA** : Antigravity (Modèle Gemini 3.8 Flash High)
+- **Modifications apportées** :
+  - `backend/app/rag.py` : ajout du contrôle n°3 vérifiant qu'au moins un fragment cité est valide (`len(cited) == len(invalid)` déclenche un refus normalisé).
+  - `backend/app/prompt.py` : ajout dans la règle 3 de la consigne stricte interdisant toute reformulation, commentaire ou proposition d'aide alternative en cas de refus.
+  - `backend/tests/test_rag.py` : ajout du test unitaire `test_answer_without_valid_citation_is_treated_as_refusal` vérifiant qu'une réponse sans citation valide (refus reformulé ou citation hors bornes) est bien traitée comme un refus.
+- **Vérifications effectuées** :
+  - Exécution de la suite complète `pytest backend/tests` : 31 tests passés avec succès.
